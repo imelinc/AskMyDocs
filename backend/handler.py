@@ -7,7 +7,7 @@ def _messages_payload(text: str):
     # Recorte básico por seguridad para no enviar textos enormes
     text = text[:20000].strip()
     prompt = (
-        "Resume en español el siguiente documento en un máximo de 500 caracteres. "
+        "Resume en español el siguiente documento en un máximo de 450 caracteres. "
         "Sé claro y cubrí las ideas principales. Si el texto está vacío, decí 'No se pudo extraer contenido'.\n\n"
         f"Texto:\n{text}"
     )
