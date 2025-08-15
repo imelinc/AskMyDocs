@@ -5,9 +5,9 @@ MODEL_ID = os.environ.get("MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0")
 
 def _messages_payload(text: str):
     
-    text = text[:20000].strip()
+    text = text[:6000]
     prompt = (
-        "Resume en español el siguiente documento en un máximo de 450 caracteres."
+        "Resume en español el siguiente documento en un máximo de 450 tokens."
         "No uses comillas ni guiones. No incluyas el nombre del documento ni la fecha. "
         "No uses palabras como 'resumen' o 'conclusión'. "
         "Si el texto es muy corto, no lo resumas, simplemente repite el texto. "
@@ -22,7 +22,7 @@ def _messages_payload(text: str):
         "messages": [
             {"role": "user", "content": [{"type": "text", "text": prompt}]}
         ],
-        "max_tokens": 600,
+        "max_tokens": 500,
         "temperature": 0.2,
     }
 
