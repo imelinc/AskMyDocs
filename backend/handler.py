@@ -1,28 +1,35 @@
-import json, os, boto3
+import json
+import os
+import boto3
 
 bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
 MODEL_ID = os.environ.get("MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0")
 
-def _messages_payload(text: str):
-    
-    text = text[:6000]
+# Límites “free-tier friendly”
+MAX_INPUT_CHARS = 6000       # ~1500 tokens aprox.
+MAX_OUTPUT_TOKENS = 500      # salida del modelo
+MAX_OUTPUT_CHARS = 450       # recorte final visible
+
+def _messages_payload(text: str) -> dict:
+    # Recorte de seguridad en la entrada
+    text = (text or "").strip()[:MAX_INPUT_CHARS]
+
     prompt = (
-        "Resume en español el siguiente documento en un máximo de 450 tokens."
-        "No uses comillas ni guiones. No incluyas el nombre del documento ni la fecha. "
-        "No uses palabras como 'resumen' o 'conclusión'. "
-        "Si el texto es muy corto, no lo resumas, simplemente repite el texto. "
-        "Si el texto es muy largo, extrae las ideas principales y resume en 450 caracteres. "
-        "No uses palabras como 'resumen' o 'conclusión"
-        "Sé claro y cubrí las ideas principales. Si el texto está vacío, decí 'No se pudo extraer contenido'.\n\n"
+        "Resume en español el siguiente documento en un máximo de 450 caracteres. "
+        "No uses comillas ni guiones. No incluyas nombre del documento ni fechas. "
+        "No uses palabras como resumen ni conclusión. "
+        "Si el texto es muy corto, no lo resumas: repítelo tal cual. "
+        "Si el texto es largo, extrae ideas principales y resume en 450 caracteres. "
+        "Si el texto está vacío, responde exactamente: No se pudo extraer contenido.\n\n"
         f"Texto:\n{text}"
     )
+
     return {
-        # Requerido por Bedrock para modelos de Anthropic (Claude 3/3.5)
         "anthropic_version": "bedrock-2023-05-31",
         "messages": [
             {"role": "user", "content": [{"type": "text", "text": prompt}]}
         ],
-        "max_tokens": 500,
+        "max_tokens": MAX_OUTPUT_TOKENS,
         "temperature": 0.2,
     }
 
@@ -43,16 +50,18 @@ def lambda_handler(event, context):
         )
         data = json.loads(resp["body"].read())
 
-        # Para Messages API de Claude 3 en Bedrock:
-        # data["content"] es una lista de bloques; tomamos el primero de tipo "text"
+        # Claude 3 en Bedrock (Messages API):
+        # data["content"] es una lista de bloques; tomamos el primero de tipo "text".
         blocks = data.get("content", []) or data.get("output", {}).get("content", [])
-        summary = ""
-        if blocks and isinstance(blocks, list):
+        out_text = ""
+        if isinstance(blocks, list) and blocks:
             first = blocks[0] or {}
-            summary = first.get("text", "") or first.get("content", "")
-        summary = (summary or "").strip()[:500]
+            out_text = first.get("text", "") or first.get("content", "")
 
-        return _resp(200, {"summary": summary or "No hubo respuesta del modelo."})
+        # Recorte final a 450 caracteres (coherente con el prompt)
+        summary = (out_text or "").strip()[:MAX_OUTPUT_CHARS] or "No hubo respuesta del modelo."
+
+        return _resp(200, {"summary": summary})
     except Exception as e:
         return _resp(500, {"error": str(e)})
 
