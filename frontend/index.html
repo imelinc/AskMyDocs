@@ -4,80 +4,397 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ASK MY DOCS - v0.1</title>
+    <title>ASK MY DOCS - v2.0</title>
+    <meta name="color-scheme" content="light dark">
     <style>
-        body {
-            font-family: system-ui, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            line-height: 1.5;
+        :root {
+            --bg: #0f1220;
+            --card: #151a2f;
+            --text: #e7e9f2;
+            --muted: #a3a7be;
+            --primary: #6ea8ff;
+            --primary-600: #4c93ff;
+            --border: #2a3152;
+            --ok: #3ddc97;
+            --err: #ff6b6b;
+            --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+            --radius: 16px;
         }
 
-        .card {
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 16px;
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #f6f7fb;
+                --card: #ffffff;
+                --text: #161827;
+                --muted: #4b4f67;
+                --primary: #2f6efc;
+                --primary-600: #255eea;
+                --border: #e6e8f0;
+                --ok: #06c167;
+                --err: #e11d48;
+                --shadow: 0 10px 25px rgba(25, 33, 72, .08);
+            }
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background:
+                radial-gradient(1200px 600px at 10% -10%, #2f6efc22, transparent 60%),
+                radial-gradient(1000px 500px at 120% 10%, #06c16722, transparent 60%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+
+        .wrap {
+            width: min(920px, 100%);
+        }
+
+        .header {
+            text-align: center;
             margin-bottom: 20px;
         }
 
-        button {
-            padding: 10px 16px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
+        .title {
+            font-size: clamp(24px, 3vw, 36px);
+            margin: 0 0 6px
+        }
+
+        .subtitle {
+            color: var(--muted);
+            margin: 0
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.2fr .8fr;
+            gap: 18px;
+            padding: 18px
+        }
+
+        @media (max-width: 860px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .drop {
+            border: 1.5px dashed var(--border);
+            border-radius: calc(var(--radius) - 6px);
+            padding: 20px;
+            text-align: center;
+            transition: .2s;
+            background: linear-gradient(180deg, transparent, rgba(255, 255, 255, .02));
+        }
+
+        .drop.drag {
+            border-color: var(--primary);
+            background: linear-gradient(180deg, rgba(47, 110, 252, .08), transparent);
+        }
+
+        .drop h3 {
+            margin: 6px 0 8px;
+            font-size: 18px
+        }
+
+        .drop p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px
+        }
+
+        .drop .actions {
+            margin-top: 14px
+        }
+
+        .btn {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: var(--primary);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 10px;
             cursor: pointer;
+            font-weight: 600;
+            transition: .15s;
+            box-shadow: 0 6px 16px rgba(47, 110, 252, .25);
         }
 
-        textarea {
-            width: 100%;
+        .btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+            box-shadow: none
         }
 
-        input[type="file"] {
-            margin: 10px 0;
+        .btn.secondary {
+            background: transparent;
+            color: var(--text)
         }
 
-        .muted {
-            color: #666;
-            font-size: 0.9em;
+        .row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap
+        }
+
+        input[type=file] {
+            display: none
+        }
+
+        .meta {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 10px
+        }
+
+        .chip {
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, .08);
+            border: 1px solid var(--border)
+        }
+
+        .ok {
+            color: var(--ok)
+        }
+
+        .err {
+            color: var(--err)
+        }
+
+        .side {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .status {
+            font-size: 14px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .bar {
+            height: 8px;
+            background: #00000022;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid var(--border)
+        }
+
+        .bar>span {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), #06c167);
+            transition: width .3s ease
+        }
+
+        .result {
+            border-top: 1px solid var(--border);
+            padding: 18px;
+            background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .04));
+        }
+
+        .result h3 {
+            margin: 0 0 6px
         }
 
         pre {
+            margin: 0;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #00000011;
             white-space: pre-wrap;
+            font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        .tools {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px
+        }
+
+        .ghost {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .badge {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .hidden {
+            display: none !important
+        }
+
+        /* spinner */
+        .spin {
+            width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            border: 2px solid #ffffff66;
+            border-top-color: #fff;
+            animation: spin .8s linear infinite
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
         }
     </style>
 
-    <!-- pdf.js v2.x que expone pdfjsLib en window -->
+    <!-- pdf.js v2.x para exponer pdfjsLib -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"></script>
     <script>
-        // Configura el worker (debe coincidir con la versión de arriba)
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
     </script>
 </head>
 
 <body>
-    <h1>ASK MY DOCS - v0.1</h1>
+    <div class="wrap">
+        <header class="header">
+            <h1 class="title">ASK MY DOCS - v2.0</h1>
+            <p class="subtitle">Subí un PDF y generamos un resumen breve con IA (Claude 3 Haiku).</p>
+        </header>
 
-    <div class="card">
-        <h2>1) Elegí un PDF</h2>
-        <input id="fileInput" type="file" accept="application/pdf" />
-        <button id="btnSummarize">Resumir</button>
-        <p id="status" class="muted"></p>
-    </div>
+        <section class="card">
+            <div class="grid">
+                <!-- IZQUIERDA: dropzone -->
+                <div>
+                    <div id="drop" class="drop" tabindex="0" aria-label="Área para arrastrar y soltar PDF">
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" style="opacity:.9">
+                            <path
+                                d="M12 16V4m0 0l-3.5 3.5M12 4l3.5 3.5M5 12a7 7 0 0114 0v1h1a2 2 0 010 4h-1v1a2 2 0 01-2 2H8a2 2 0 01-2-2v-1H5a2 2 0 010-4h1v-1z"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                        <h3>Arrastrá tu PDF aquí</h3>
+                        <p>o</p>
+                        <div class="actions row">
+                            <label class="btn secondary" for="file">Elegir archivo</label>
+                            <input id="file" type="file" accept="application/pdf" />
+                            <button id="btnSummarize" class="btn">
+                                <span class="spin hidden" id="spin"></span> Resumir
+                            </button>
+                        </div>
+                        <div class="meta">
+                            <span class="chip">PDF hasta ~2–3 páginas recomendado</span>
+                            <span class="chip">Salida breve</span>
+                        </div>
+                    </div>
+                </div>
 
-    <div class="card">
-        <h2>2) Resumen</h2>
-        <pre id="summary">—</pre>
+                <!-- DERECHA: estado -->
+                <div class="side">
+                    <div class="status" id="status">
+                        Estado: esperando archivo…
+                    </div>
+                    <div>
+                        <div class="bar"><span id="bar" style="width:0%"></span></div>
+                        <div class="badge" id="metaInfo"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULTADO -->
+            <div class="result">
+                <h3>Resumen</h3>
+                <pre id="summary">—</pre>
+                <div class="tools">
+                    <button id="copyBtn" class="ghost">Copiar</button>
+                    <span class="badge" id="lenInfo"></span>
+                </div>
+            </div>
+        </section>
     </div>
 
     <script>
-        const fileInput = document.getElementById('fileInput');
-        const statusEl = document.getElementById('status');
-        const summaryEl = document.getElementById('summary');
-
-        
+        // 🔗 Pega aquí tu Invoke URL (sin / al final si no quieres doble slash)
         const API_BASE = "https://jh0l16klcc.execute-api.us-east-1.amazonaws.com";
 
+        const fileInput = document.getElementById('file');
+        const drop = document.getElementById('drop');
+        const btn = document.getElementById('btnSummarize');
+        const statusEl = document.getElementById('status');
+        const bar = document.getElementById('bar');
+        const summaryEl = document.getElementById('summary');
+        const metaInfo = document.getElementById('metaInfo');
+        const copyBtn = document.getElementById('copyBtn');
+        const spin = document.getElementById('spin');
+
+        let currentFile = null;
+
+        // Drag & drop
+        ['dragenter', 'dragover'].forEach(evt => {
+            drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.add('drag'); });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+            drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.remove('drag'); });
+        });
+        drop.addEventListener('drop', e => {
+            const f = e.dataTransfer.files?.[0];
+            if (f && f.type === 'application/pdf') {
+                currentFile = f;
+                fileInput.files = e.dataTransfer.files;
+                onFilePicked(f);
+            } else {
+                setStatus('Solo se acepta PDF.', true);
+            }
+        });
+
+        // File picker
+        fileInput.addEventListener('change', e => {
+            const f = e.target.files?.[0];
+            if (f) { currentFile = f; onFilePicked(f); }
+        });
+
+        function onFilePicked(file) {
+            summaryEl.textContent = '—';
+            bar.style.width = '0%';
+            setStatus('Archivo listo para procesar.');
+            metaInfo.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        }
+
+        // Extraer texto con pdf.js (progreso simulado sencillo)
         async function extractTextFromPDF(file) {
             const buf = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
@@ -87,38 +404,72 @@
                 const content = await page.getTextContent();
                 const text = content.items.map(i => i.str).join(' ');
                 out += text + '\n';
-                if (out.length > 30000) break; // límite de seguridad
+                bar.style.width = `${Math.round((p / pdf.numPages) * 70)}%`; // hasta 70% en extracción
+                if (out.length > 30000) break; // seguridad
             }
             return out.trim();
         }
 
-        document.getElementById('btnSummarize').onclick = async () => {
-            statusEl.textContent = '';
-            summaryEl.textContent = '—';
+        function setStatus(msg, isError = false) {
+            statusEl.innerHTML = (isError ? '❌ ' : 'ℹ️ ') + msg;
+            statusEl.classList.toggle('err', isError);
+        }
 
-            const file = fileInput.files?.[0];
-            if (!file) { statusEl.textContent = 'Elegí un PDF primero.'; return; }
+        btn.addEventListener('click', async () => {
+            if (!currentFile) { setStatus('Elegí o arrastrá un PDF primero.', true); return; }
 
             try {
-                statusEl.textContent = 'Extrayendo texto del PDF en el navegador...';
-                const text = await extractTextFromPDF(file);
-                if (!text) { summaryEl.textContent = 'No se pudo extraer contenido.'; return; }
+                spin.classList.remove('hidden');
+                btn.disabled = true;
+                setStatus('Extrayendo texto del PDF…');
+                const text = await extractTextFromPDF(currentFile);
+                if (!text) { setStatus('No se pudo extraer contenido del PDF.', true); resetBtn(); return; }
 
-                statusEl.textContent = 'Llamando a la API para resumir...';
+                setStatus('Llamando a la API para resumir…');
+                bar.style.width = '85%';
+
                 const res = await fetch(`${API_BASE}/summarize`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text })
                 });
-                const data = await res.json();
+
+                const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || 'Error en la API');
 
                 summaryEl.textContent = data.summary || 'Sin respuesta';
-                statusEl.textContent = 'Listo ✔';
+                document.getElementById('lenInfo').textContent = `${(data.summary || '').length} caracteres`;
+                setStatus('Listo ✔');
+                bar.style.width = '100%';
             } catch (e) {
-                statusEl.textContent = 'Error: ' + e.message;
+                setStatus(e.message || 'Error desconocido', true);
+                bar.style.width = '0%';
+            } finally {
+                resetBtn();
             }
-        };
+        });
+
+        function resetBtn() {
+            btn.disabled = false;
+            spin.classList.add('hidden');
+        }
+
+        copyBtn.addEventListener('click', async () => {
+            const text = summaryEl.textContent.trim();
+            if (!text || text === '—') return;
+            try {
+                await navigator.clipboard.writeText(text);
+                copyBtn.textContent = 'Copiado ✓';
+                setTimeout(() => copyBtn.textContent = 'Copiar', 1200);
+            } catch {
+                // fallback
+                const ta = document.createElement('textarea');
+                ta.value = text; document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); document.body.removeChild(ta);
+                copyBtn.textContent = 'Copiado ✓';
+                setTimeout(() => copyBtn.textContent = 'Copiar', 1200);
+            }
+        });
     </script>
 </body>
 
