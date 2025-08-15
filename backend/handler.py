@@ -4,15 +4,20 @@ bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
 MODEL_ID = os.environ.get("MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0")
 
 def _messages_payload(text: str):
-    # Recorte básico por seguridad para no enviar textos enormes
+    
     text = text[:20000].strip()
     prompt = (
-        "Resume en español el siguiente documento en un máximo de 450 caracteres. "
+        "Resume en español el siguiente documento en un máximo de 450 caracteres."
+        "No uses comillas ni guiones. No incluyas el nombre del documento ni la fecha. "
+        "No uses palabras como 'resumen' o 'conclusión'. "
+        "Si el texto es muy corto, no lo resumas, simplemente repite el texto. "
+        "Si el texto es muy largo, extrae las ideas principales y resume en 450 caracteres. "
+        "No uses palabras como 'resumen' o 'conclusión"
         "Sé claro y cubrí las ideas principales. Si el texto está vacío, decí 'No se pudo extraer contenido'.\n\n"
         f"Texto:\n{text}"
     )
     return {
-        # 👈 Requerido por Bedrock para modelos de Anthropic (Claude 3/3.5)
+        # Requerido por Bedrock para modelos de Anthropic (Claude 3/3.5)
         "anthropic_version": "bedrock-2023-05-31",
         "messages": [
             {"role": "user", "content": [{"type": "text", "text": prompt}]}
