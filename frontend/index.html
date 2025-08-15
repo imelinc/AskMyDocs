@@ -44,8 +44,15 @@
             white-space: pre-wrap;
         }
     </style>
-    <!-- pdf.js desde CDN -->
+
+    <!-- pdf.js desde CDN con compatibilidad -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js"></script>
+    <script>
+        // Configuramos el worker de pdf.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
+    </script>
 </head>
 
 <body>
@@ -82,7 +89,7 @@
                 const content = await page.getTextContent();
                 const strings = content.items.map(i => i.str).join(' ');
                 out += strings + '\n';
-                if (out.length > 30000) break; // límite de seguridad
+                if (out.length > 30000) break; // límite de seguridad para no pasar texto gigante
             }
             return out;
         }
