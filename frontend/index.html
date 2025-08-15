@@ -45,13 +45,13 @@
         }
     </style>
 
-    <!-- pdf.js desde CDN con compatibilidad -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js"></script>
+    <!-- pdf.js v2.x que expone pdfjsLib en window -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"></script>
     <script>
-        // Configuramos el worker de pdf.js
+        // Configura el worker (debe coincidir con la versión de arriba)
         pdfjsLib.GlobalWorkerOptions.workerSrc =
-            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
     </script>
 </head>
 
@@ -87,11 +87,11 @@
             for (let p = 1; p <= pdf.numPages; p++) {
                 const page = await pdf.getPage(p);
                 const content = await page.getTextContent();
-                const strings = content.items.map(i => i.str).join(' ');
-                out += strings + '\n';
-                if (out.length > 30000) break; // límite de seguridad para no pasar texto gigante
+                const text = content.items.map(i => i.str).join(' ');
+                out += text + '\n';
+                if (out.length > 30000) break; // límite de seguridad
             }
-            return out;
+            return out.trim();
         }
 
         document.getElementById('btnSummarize').onclick = async () => {
@@ -106,6 +106,7 @@
             try {
                 statusEl.textContent = 'Extrayendo texto del PDF en el navegador...';
                 const text = await extractTextFromPDF(file);
+                if (!text) { summaryEl.textContent = 'No se pudo extraer contenido.'; return; }
 
                 statusEl.textContent = 'Llamando a la API para resumir...';
                 const res = await fetch(`${base}/summarize`, {
