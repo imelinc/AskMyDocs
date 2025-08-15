@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Resumen de PDF (mínimo)</title>
+    <title>ASK MY DOCS - v0.1</title>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -56,15 +56,11 @@
 </head>
 
 <body>
-    <h1>Resumen de PDF (≤ 500 caracteres)</h1>
+    <h1>ASK MY DOCS - v0.1</h1>
 
     <div class="card">
         <h2>1) Elegí un PDF</h2>
         <input id="fileInput" type="file" accept="application/pdf" />
-        <div>
-            <label>API Base URL:</label>
-            <input id="apiBase" size="60" placeholder="https://jh0l16klcc.execute-api.us-east-1.amazonaws.com" />
-        </div>
         <button id="btnSummarize">Resumir</button>
         <p id="status" class="muted"></p>
     </div>
@@ -76,9 +72,11 @@
 
     <script>
         const fileInput = document.getElementById('fileInput');
-        const apiBase = document.getElementById('apiBase');
         const statusEl = document.getElementById('status');
         const summaryEl = document.getElementById('summary');
+
+        
+        const API_BASE = "https://jh0l16klcc.execute-api.us-east-1.amazonaws.com";
 
         async function extractTextFromPDF(file) {
             const buf = await file.arrayBuffer();
@@ -99,9 +97,7 @@
             summaryEl.textContent = '—';
 
             const file = fileInput.files?.[0];
-            const base = apiBase.value.trim();
             if (!file) { statusEl.textContent = 'Elegí un PDF primero.'; return; }
-            if (!base) { statusEl.textContent = 'Pegá el API Base URL.'; return; }
 
             try {
                 statusEl.textContent = 'Extrayendo texto del PDF en el navegador...';
@@ -109,7 +105,7 @@
                 if (!text) { summaryEl.textContent = 'No se pudo extraer contenido.'; return; }
 
                 statusEl.textContent = 'Llamando a la API para resumir...';
-                const res = await fetch(`${base}/summarize`, {
+                const res = await fetch(`${API_BASE}/summarize`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text })
