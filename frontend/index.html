@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ASK MY DOCS - 1.0</title>
+    <title>Resumen de PDF (mínimo)</title>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -27,79 +27,92 @@
             cursor: pointer;
         }
 
+        textarea {
+            width: 100%;
+        }
+
         input[type="file"] {
             margin: 10px 0;
         }
 
-        code {
-            background: #f6f6f6;
-            padding: 2px 6px;
-            border-radius: 6px;
+        .muted {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        pre {
+            white-space: pre-wrap;
         }
     </style>
+    <!-- pdf.js desde CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
 </head>
 
 <body>
-    <h1>ASK MY DOCS - 1.0</h1>
+    <h1>Resumen de PDF (≤ 500 caracteres)</h1>
 
     <div class="card">
-        <h2>1) Subir PDF a S3</h2>
-        <p>Elegí un PDF y lo subimos directo a S3 con un <em>pre-signed URL</em>.</p>
+        <h2>1) Elegí un PDF</h2>
         <input id="fileInput" type="file" accept="application/pdf" />
         <div>
             <label>API Base URL:</label>
-            <input id="apiBase" size="60" placeholder="https://dyyy3sy3r3.execute-api.us-east-1.amazonaws.com" />
+            <input id="apiBase" size="60" placeholder="https://jh0l16klcc.execute-api.us-east-1.amazonaws.com" />
         </div>
-        <button id="btnUpload">Subir PDF</button>
-        <p id="uploadStatus"></p>
-        <p>Key del archivo: <code id="fileKey">–</code></p>
+        <button id="btnSummarize">Resumir</button>
+        <p id="status" class="muted"></p>
     </div>
 
     <div class="card">
-        <h2>2) Preguntar sobre el PDF</h2>
-        <p>Una vez procesado, podrás hacer preguntas. (Activamos esto en la próxima lección.)</p>
-        <label>Key (del PDF o del texto):</label>
-        <input id="askKey" size="60" placeholder="uploads/xxxxx.pdf" />
-        <br /><br />
-        <label>Pregunta:</label><br />
-        <textarea id="question" rows="3" cols="70" placeholder="¿De qué trata el documento?"></textarea>
-        <br /><br />
-        <button id="btnAsk" disabled>Preguntar (próxima lección)</button>
-        <pre id="answer"></pre>
+        <h2>2) Resumen</h2>
+        <pre id="summary">—</pre>
     </div>
 
     <script>
         const fileInput = document.getElementById('fileInput');
         const apiBase = document.getElementById('apiBase');
-        const uploadStatus = document.getElementById('uploadStatus');
-        const fileKeyEl = document.getElementById('fileKey');
-        const askKey = document.getElementById('askKey');
+        const statusEl = document.getElementById('status');
+        const summaryEl = document.getElementById('summary');
 
-        document.getElementById('btnUpload').onclick = async () => {
-            uploadStatus.textContent = '';
+        async function extractTextFromPDF(file) {
+            const buf = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+            let out = '';
+            for (let p = 1; p <= pdf.numPages; p++) {
+                const page = await pdf.getPage(p);
+                const content = await page.getTextContent();
+                const strings = content.items.map(i => i.str).join(' ');
+                out += strings + '\n';
+                if (out.length > 30000) break; // límite de seguridad
+            }
+            return out;
+        }
+
+        document.getElementById('btnSummarize').onclick = async () => {
+            statusEl.textContent = '';
+            summaryEl.textContent = '—';
+
             const file = fileInput.files?.[0];
             const base = apiBase.value.trim();
-            if (!file) { uploadStatus.textContent = 'Elegí un PDF primero.'; return; }
-            if (!base) { uploadStatus.textContent = 'Pegá el API Base URL.'; return; }
+            if (!file) { statusEl.textContent = 'Elegí un PDF primero.'; return; }
+            if (!base) { statusEl.textContent = 'Pegá el API Base URL.'; return; }
 
             try {
-                // 1) Pedimos URL firmada
-                const urlRes = await fetch(`${base}/get-upload-url?ext=pdf`);
-                const { uploadUrl, key } = await urlRes.json();
+                statusEl.textContent = 'Extrayendo texto del PDF en el navegador...';
+                const text = await extractTextFromPDF(file);
 
-                // 2) Subimos directo a S3
-                const putRes = await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/pdf' },
-                    body: file
+                statusEl.textContent = 'Llamando a la API para resumir...';
+                const res = await fetch(`${base}/summarize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
                 });
-                if (!putRes.ok) throw new Error('Fallo al subir a S3');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error en la API');
 
-                uploadStatus.textContent = '¡Subido con éxito! Esperá el procesamiento.';
-                fileKeyEl.textContent = key;
-                askKey.value = key; // lo dejamos listo para la próxima fase
+                summaryEl.textContent = data.summary || 'Sin respuesta';
+                statusEl.textContent = 'Listo ✔';
             } catch (e) {
-                uploadStatus.textContent = 'Error: ' + e.message;
+                statusEl.textContent = 'Error: ' + e.message;
             }
         };
     </script>
